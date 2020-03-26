@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import socket from './api/ws';
+import {chatSocket} from './api/ws';
 import MessagesList from './components/MessagesList';
 import UsersList from './components/UsersList';
 import styles from './App.module.css';
@@ -16,8 +16,8 @@ class App extends Component{
 	}
 
 	componentDidMount() {
-		socket.emit('get-users');
-		socket.on('get-users', users => {
+		chatSocket.emit('get-users');
+		chatSocket.on('get-users', users => {
 
 			const userMap = new Map();
 			users.forEach(user => {
@@ -28,15 +28,16 @@ class App extends Component{
 				users: userMap,
 			});
 		});
-		socket.on('new-user', this.addUser);
-		socket.on('user-leave', this.removeUser);
-		socket.on('private-message', (message) => {
+		chatSocket.on('new-user', this.addUser);
+		chatSocket.on('user-leave', this.removeUser);
+		chatSocket.on('private-message', (message) => {
 
-			this.state.users.get(message.author).push(message);
-
-			this.setState({
-				users: this.state.users,
-			});
+			if (this.state.users.has(message.author)) {
+				this.state.users.get(message.author).push(message);
+				this.setState({
+					users: this.state.users,
+				});
+			}
 
 		});
 	}
@@ -70,7 +71,7 @@ class App extends Component{
 				body: this.state.message,
 				timestamp: new Date(),
 			});
-			socket.emit('send-message', this.state.currentUser, {
+			chatSocket.emit('send-message', this.state.currentUser, {
 				body: this.state.message,
 				timestamp: new Date(),
 			});

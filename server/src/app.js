@@ -9,38 +9,44 @@ const router = require('./router');
 
 app.use(router);
 
-io.on('connection', function connectionHandler(socket) {
+const chat = io.of('/chat')
+		.on('connection', function connectionHandler(socket) {
 
-	socket.broadcast.emit('new-user', socket.id);
+			socket.broadcast.emit('new-user', socket.id);
 
-	socket.on('send-message', (to, message) => {
+			socket.on('send-message', (to, message) => {
 
-		message.author = socket.id;
+				message.author = socket.id;
 
-		socket.to(to).emit('private-message', message);
+				socket.to(to).emit('private-message', message);
 
-	});
+			});
 
-	socket.on('get-users', () => {
-		io.clients((error, clients) => {
-			if (error) {
-				throw error;
-			}
-			const users = [...clients];
-			console.log(users);
-			users.splice(users.indexOf(socket.id), 1);
+			socket.on('get-users', () => {
+				chat.clients((error, clients) => {
+					if (error) {
+						throw error;
+					}
+					const users = [...clients];
+					console.log(users);
+					users.splice(users.indexOf(socket.id), 1);
 
-			socket.emit('get-users', users);
+					socket.emit('get-users', users);
+				});
+			});
+
+			socket.on('disconnect', () => {
+
+				chat.emit('user-leave', socket.id);
+
+			});
+
 		});
-	});
 
-	socket.on('disconnect', () => {
+const serverEvent = io.of('/events')
+		.on('connecton', function(socket) {
 
-		io.emit('user-leave', socket.id);
-
-	});
-
-});
+		});
 
 const PORT = process.env.PORT || 3000;
 

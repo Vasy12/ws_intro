@@ -1,4 +1,4 @@
 import io from 'socket.io-client';
 
-const socket = io('ws://localhost:3000/');
-export default socket;
+export const chatSocket = io('ws://localhost:3000/chat');
+export const eventsSocket = io('ws://localhost:3000/events');
