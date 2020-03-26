@@ -9,23 +9,34 @@ const router = require('./router');
 
 app.use(router);
 
-const rooms = ['room1', 'room2'];
-
-const joinToRooms = socket => {
-	rooms.forEach(room => {
-		socket.join(room);
-	});
-};
-
 io.on('connection', function connectionHandler(socket) {
 
-	joinToRooms(socket);
+	socket.broadcast.emit('new-user', socket.id);
 
-	socket.on('message', (room, message) => {
-		io.in(room).emit('new-message', room, message);
+	socket.on('send-message', (to, message) => {
+
+		message.author = socket.id;
+
+		socket.to(to).emit('private-message', message);
+
 	});
 
-	socket.on('join-to-room', (room) => {
+	socket.on('get-users', () => {
+		io.clients((error, clients) => {
+			if (error) {
+				throw error;
+			}
+			const users = [...clients];
+			console.log(users);
+			users.splice(users.indexOf(socket.id), 1);
+
+			socket.emit('get-users', users);
+		});
+	});
+
+	socket.on('disconnect', () => {
+
+		io.emit('user-leave', socket.id);
 
 	});
 

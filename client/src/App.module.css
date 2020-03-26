@@ -1,13 +1,21 @@
-.roomsContainer {
+.container {
     display: flex;
     justify-content: space-between;
     min-width: 80vw;
+    width: 100vw;
+    height: 100vh;
+
 }
 
-.messagesList {
+.messagesListWrapper {
     flex: 1;
-    color: #282c34;
-    margin: 0 20px;
-    min-height: 60vh;
-    background-color: white;
+    display: flex;
+    flex-direction: column;
+    background-color: black;
+    color: white;
+
+}
+
+.messagesListWrapper > ol {
+    flex: 1;
 }

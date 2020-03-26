@@ -1,107 +1,110 @@
 import React, {Component} from 'react';
-import './App.css';
-import {emitMessage, emitTest} from './api/ws/api.js';
-import styles from './App.module.css';
 import socket from './api/ws';
-
-function MessagesList(props) {
-	const {messages} = props;
-	return (
-			<ol className={ styles.messagesList }>
-				{
-					messages.map((msg, index) => ( <li key={ index }>{ msg }</li> ))
-				}
-			</ol>
-	);
-
-}
+import MessagesList from './components/MessagesList';
+import UsersList from './components/UsersList';
+import styles from './App.module.css';
 
 class App extends Component{
 
 	constructor(props) {
 		super(props);
 		this.state = {
-
-			room1: {
-				messages: [],
-			},
-			room2: {
-				messages: [],
-			},
-			currentRoom: 'room1',
+			users: new Map(),
+			currentUser: '',
 			message: '',
 		};
 	}
 
 	componentDidMount() {
-		socket.on('new-message', this.handleNewMessage);
+		socket.emit('get-users');
+		socket.on('get-users', users => {
+
+			const userMap = new Map();
+			users.forEach(user => {
+				userMap.set(user, []);
+			});
+
+			this.setState({
+				users: userMap,
+			});
+		});
+		socket.on('new-user', this.addUser);
+		socket.on('user-leave', this.removeUser);
+		socket.on('private-message', (message) => {
+
+			this.state.users.get(message.author).push(message);
+
+			this.setState({
+				users: this.state.users,
+			});
+
+		});
 	}
 
-	handleNewMessage = (room, message) => {
-		console.log(room);
+	selectUser = (user) => {
 		this.setState({
-			[ room ]: {
-				messages: [...this.state[ room ].messages, message],
-			},
+			currentUser: user,
+		});
+	};
+
+	addUser = (id) => {
+		this.state.users.set(id, []);
+		this.setState({
+			users: this.state.users,
 		});
 
 	};
 
-	switchRoom = (e) => {
-		this.setState({
-			currentRoom: e.target.value,
-		});
+	removeUser = (id) => {
+		this.state.users.delete(id);
+		this.setState(
+				{
+					users: this.state.users,
+				},
+		);
 	};
 
 	sendMessage = () => {
-
-		const {currentRoom, message} = this.state;
-
-		emitMessage(currentRoom, message);
-
-		this.setState({
-			message: '',
-		});
-
+		if (this.state.currentUser) {
+			this.state.users.get(this.state.currentUser).push({
+				body: this.state.message,
+				timestamp: new Date(),
+			});
+			socket.emit('send-message', this.state.currentUser, {
+				body: this.state.message,
+				timestamp: new Date(),
+			});
+			this.setState({
+				message: '',
+			});
+		}
 	};
 
 	render() {
-
-		const {currentRoom, message, room1: {messages: room1Messages}, room2: {messages: room2Messages}} = this.state;
-
 		return (
-				<>
-					<div className={ styles.roomsContainer }>
-						<MessagesList messages={ room1Messages }/>
-						<MessagesList messages={ room2Messages }/>
-					</div>
-					<label>
-						<input type="radio" name={ 'currentRoom' } value={ 'room1' }
-						       checked={ currentRoom === 'room1' }
-						       onChange={ this.switchRoom }/>
-						<span>Send to Room1</span>
-					</label>
-					<br/>
-					<label>
-						<input type="radio" name={ 'currentRoom' } value={ 'room2' }
-						       checked={ currentRoom === 'room2' }
-						       onChange={ this.switchRoom }/>
-						<span>Send to Room2</span>
-					</label>
 
-					<div>
-						<input type="text" value={ message } onChange={ (e) => {
-							this.setState({
-								message: e.target.value,
-							});
-						} }/>
-						<button onClick={ this.sendMessage }>Send
-							message >
-						</button>
+				<div className={ styles.container }>
+					<UsersList onSelect={ this.selectUser }
+					           users={ [...this.state.users.keys()] }
+					           currentUser={ this.state.currentUser }/>
+					<div className={ styles.messagesListWrapper }>
+						<MessagesList
+								messages={ this.state.users.get(this.state.currentUser) }/>
+						<div>
+							<input type="text" value={ this.state.message }
+							       onChange={ (e) => {
+								       this.setState({
+									       message: e.target.value,
+								       });
+							       } }/>
+							<button onClick={ this.sendMessage }>send message
+							</button>
+						</div>
 					</div>
-				</>
+				</div>
 		);
 	}
+
 }
 
 export default App;

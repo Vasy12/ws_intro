@@ -1,0 +1,28 @@
+
+.container {
+    height: 100vh;
+    width: 320px;
+    background-color: #282c34;
+    color: white;
+}
+
+.userItem {
+    --odd-user-bg: chocolate;
+    background-color: burlywood;
+    color: white;
+    box-sizing: border-box;
+    padding: 10px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+}
+
+
+.userItem:nth-child(odd) {
+    background-color: var(--odd-user-bg);
+}
+
+.userItemSelected {
+    border: 2px solid red;
+}
