@@ -1,4 +1,5 @@
 const {testHandler, messageHandler} = require('./eventHandlers');
+
 module.exports = function connectionHandler(socket) {
 
 	/*	const handshake = socket.handshake;
